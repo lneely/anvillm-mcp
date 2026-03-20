@@ -1,40 +1,44 @@
 # anvillm-mcp
 
-MCP (Model Context Protocol) server for tool execution with sandboxing.
+MCP (Model Context Protocol) server providing sandboxed code execution for LLM agents.
 
-## Usage
+## Overview
+
+anvilmcp bridges MCP clients (Claude Desktop, Kiro, etc.) to shell execution with security isolation. It wraps script execution in a sandbox (landlock/landrun/bwrap) to limit filesystem and network access.
+
+**Note:** The tools themselves are hosted by anvillm via 9P at `anvillm/tools/*`. anvilmcp is optional — without it, you can still run tools directly:
 
 ```sh
-# Build and install
-mk
-
-# The server is invoked by MCP clients (Claude, Kiro, etc.)
-anvilmcp
+bash <(9p read anvillm/tools/check_inbox.sh)
 ```
 
-## Features
+anvilmcp adds sandboxed execution for MCP clients, but is not required for basic tool usage.
 
-- Sandboxed code execution via bwrap/firejail
-- Tool scripts in `mcptools/`
-- Pipeline support for chaining tools
-- Rate limiting and security validation
-- Execution metrics logging
+## Installation
+
+```sh
+mk install
+```
+
+### Backend Setup
+
+Install MCP configuration for your backend:
+
+```sh
+./claude/install-mcp.sh      # Claude Desktop
+./kiro-cli/install-mcp.sh    # Kiro CLI
+./ollama/install-mcp.sh      # Ollama
+```
 
 ## Configuration
 
 Sandbox configuration uses layered YAML files from `~/.config/anvillm/`:
-- `global.yaml` - base configuration
-- `sandbox/<name>.yaml` - sandbox-specific overrides
+- `global.yaml` — base configuration
+- `sandbox/<name>.yaml` — sandbox-specific overrides
 
 See `docs/` for detailed security and usage documentation.
 
-## mcptools
+## Dependencies
 
-Shell scripts that provide MCP tools for:
-- Beads task management (create, claim, complete, etc.)
-- Session control
-- Messaging between agents
-- Skill discovery and loading
-- Code exploration
-
-Installed to `~/.config/anvillm/mcptools/` by `mk install`.
+- anvillm (required) — serves tools via 9P, manages sessions/beads
+- landrun or bwrap (optional) — sandbox isolation
