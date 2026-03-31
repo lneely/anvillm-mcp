@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	execpkg "ollie/exec"
 )
 
 var (
@@ -146,14 +148,14 @@ func handleToolCall(req MCPRequest) {
 		language, _ := params.Arguments["language"].(string)
 
 		// Parse pipe steps
-		var pipeSteps []PipeStep
+		var pipeSteps []execpkg.PipeStep
 		if pipeRaw, ok := params.Arguments["pipe"].([]interface{}); ok {
 			for _, stepRaw := range pipeRaw {
 				stepMap, ok := stepRaw.(map[string]interface{})
 				if !ok {
 					continue
 				}
-				step := PipeStep{}
+				step := execpkg.PipeStep{}
 				step.Tool, _ = stepMap["tool"].(string)
 				step.Code, _ = stepMap["code"].(string)
 				if argsRaw, ok := stepMap["args"].([]interface{}); ok {
@@ -176,25 +178,22 @@ func handleToolCall(req MCPRequest) {
 		trusted := false
 		if len(pipeSteps) > 0 {
 			var err error
-			code, trusted, err = buildPipeline(pipeSteps)
+			code, trusted, err = execpkg.BuildPipeline(pipeSteps)
 			if err != nil {
 				sendError(req.ID, -32000, err.Error())
 				return
 			}
 		} else if tool != "" {
-			toolCode, err := readTool(tool)
+			toolCode, err := execpkg.ReadTool(tool)
 			if err != nil {
 				sendError(req.ID, -32000, fmt.Sprintf("failed to read tool %s: %v", tool, err))
 				return
 			}
 			code = toolCode
 			trusted = true
-			// For bash with args, wrap script to receive positional params
 			if len(toolArgs) > 0 {
-				// Escape args for bash using single quotes (prevents all expansion)
 				var escaped []string
 				for _, arg := range toolArgs {
-					// Replace ' with '\'' (end quote, escaped quote, start quote)
 					escaped = append(escaped, "'"+strings.ReplaceAll(arg, "'", "'\\''")+"'")
 				}
 				code = fmt.Sprintf("set -- %s\n%s", strings.Join(escaped, " "), code)
@@ -223,12 +222,12 @@ func handleToolCall(req MCPRequest) {
 		executionSemaphore <- struct{}{}
 		defer func() { <-executionSemaphore }()
 		fmt.Fprintf(os.Stderr, "[anvilmcp] Executing %s code (timeout: %ds, sandbox: %s, trusted: %v)\n", language, timeout, sandbox, trusted)
-		result, err := executeCode(code, language, timeout, sandbox, trusted)
+		result, err := executor.Execute(code, language, timeout, sandbox, trusted)
 
 		// Fallback to default sandbox on permission errors (only if sandbox wasn't explicit)
-		if err != nil && !sandboxExplicit && isPermissionError(err) {
+		if err != nil && !sandboxExplicit && execpkg.IsPermissionError(err) {
 			fmt.Fprintf(os.Stderr, "[anvilmcp] Permission error in %s sandbox, falling back to default\n", sandbox)
-			result, err = executeCode(code, language, timeout, "default", trusted)
+			result, err = executor.Execute(code, language, timeout, "default", trusted)
 		}
 
 		// Log token comparison
