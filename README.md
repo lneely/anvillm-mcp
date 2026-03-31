@@ -32,7 +32,7 @@ Install MCP configuration for your backend:
 
 ## Configuration
 
-Sandbox configuration uses layered YAML files from `~/.config/anvillm/`:
+Sandbox configuration uses layered YAML files from `~/.config/anvillm/`, provided by [anvillm](https://github.com/lneely/anvillm):
 - `global.yaml` — base configuration
 - `sandbox/<name>.yaml` — sandbox-specific overrides
 
