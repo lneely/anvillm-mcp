@@ -1,18 +1,18 @@
 # anvillm-mcp
 
-MCP (Model Context Protocol) server providing sandboxed code execution for LLM agents.
+MCP server providing sandboxed code execution for LLM agents.
 
 ## Overview
 
-anvilmcp bridges MCP clients (Claude Desktop, Kiro, etc.) to shell execution with security isolation. It wraps script execution in a sandbox (landlock/landrun/bwrap) to limit filesystem and network access.
+anvillm-mcp bridges MCP clients (Claude Desktop, Kiro, etc.) to shell execution with security isolation. It wraps script execution in a sandbox (landlock/landrun/bwrap) to limit filesystem and network access.
 
-**Note:** The tools themselves are hosted by anvillm via 9P at `anvillm/tools/*`. anvilmcp is optional — without it, you can still run tools directly:
+The `execute_code` tool implementation lives in [ollie](https://github.com/lneely/ollie)'s `exec` package. anvillm-mcp imports it directly, so the two share the same sandboxed execution engine. ollie uses the same package as a built-in tool and does not need anvillm-mcp for `execute_code` — this server exists for MCP clients that lack a built-in equivalent.
+
+**Note:** The tools themselves are hosted by anvillm via 9P at `anvillm/tools/*`. anvillm-mcp is optional — without it, you can still run tools directly:
 
 ```sh
 bash <(9p read anvillm/tools/check_inbox.sh)
 ```
-
-anvilmcp adds sandboxed execution for MCP clients, but is not required for basic tool usage.
 
 ## Installation
 
@@ -40,5 +40,6 @@ See `docs/` for detailed security and usage documentation.
 
 ## Dependencies
 
+- [ollie](https://github.com/lneely/ollie) (required) — provides the `exec` package
 - anvillm (required) — serves tools via 9P, manages sessions/beads
 - landrun or bwrap (optional) — sandbox isolation
