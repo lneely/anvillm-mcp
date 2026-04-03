@@ -214,7 +214,7 @@ func handleToolCall(req MCPRequest) {
 		}
 		sandbox, _ := params.Arguments["sandbox"].(string)
 		if sandbox == "" {
-			sandbox = "anvilmcp"
+			sandbox = "default"
 		}
 
 		// Acquire execution slot
